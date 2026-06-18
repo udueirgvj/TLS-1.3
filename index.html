@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Godot Lite Engine — موقع ويب</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0D10; --panel:#101216; --panel2:#15171B;
+    --accent:#E0A93A; --accent-dim:rgba(224,169,58,0.3);
+    --text:#EDEDED; --text-dim:rgba(255,255,255,0.55); --text-faint:rgba(255,255,255,0.3);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;width:100%;overflow:hidden;background:var(--bg);
+    font-family:'Tajawal',sans-serif;color:var(--text);}
+  button{font-family:inherit;cursor:pointer;}
+
+  /* ---------------- Start menu ---------------- */
+  #menu-screen{
+    position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;padding:24px;background:var(--bg);z-index:50;overflow-y:auto;
+  }
+  #menu-screen.hidden{display:none;}
+  .menu-box{width:100%;max-width:420px;}
+  .logo{font-family:'Courier New',monospace;color:var(--accent);font-size:30px;font-weight:700;
+    letter-spacing:1px;margin-bottom:4px;}
+  .tagline{color:var(--text-dim);font-size:13px;margin-bottom:36px;}
+  label.field-label{display:block;font-size:13px;color:var(--text-dim);margin-bottom:8px;}
+  input[type=text], input[type=url]{
+    width:100%;padding:14px 16px;border-radius:8px;border:1px solid var(--accent-dim);
+    background:var(--panel2);color:var(--text);font-size:15px;font-family:inherit;
+  }
+  input[type=text]:focus, input[type=url]:focus{outline:none;border-color:var(--accent);}
+  .btn-primary{
+    width:100%;margin-top:14px;padding:14px;border:none;border-radius:8px;
+    background:var(--accent);color:#000;font-weight:700;font-size:15px;
+  }
+  .recent-title{margin-top:34px;font-size:13px;color:var(--text-dim);margin-bottom:8px;}
+  .recent-item{
+    padding:12px 4px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;
+    align-items:center;gap:10px;cursor:pointer;font-size:14px;
+  }
+  .recent-item:hover{color:var(--accent);}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+
+  /* ---------------- Engine app ---------------- */
+  #app{position:fixed;inset:0;display:none;flex-direction:column;}
+  #app.visible{display:flex;}
+  #topbar{
+    height:52px;flex:0 0 auto;background:var(--panel);display:flex;align-items:center;
+    justify-content:space-between;padding:0 14px;border-bottom:1px solid rgba(255,255,255,0.06);
+    z-index:30;
+  }
+  #project-title{font-size:15px;font-weight:500;}
+  #add-btn{
+    width:36px;height:36px;border-radius:50%;border:1px solid var(--accent-dim);
+    background:transparent;color:var(--accent);font-size:20px;display:flex;
+    align-items:center;justify-content:center;
+  }
+  #add-btn:hover{background:rgba(224,169,58,0.12);}
+  #viewport-wrap{flex:1 1 auto;position:relative;}
+  #viewport{position:absolute;inset:0;}
+  canvas{display:block;touch-action:none;}
+
+  #hud{position:absolute;inset:0;pointer-events:none;font-family:'Courier New',monospace;}
+  #joystick-zone{
+    position:absolute;left:24px;bottom:24px;width:130px;height:130px;border-radius:50%;
+    background:rgba(20,22,26,0.45);border:1px solid var(--accent-dim);pointer-events:auto;
+  }
+  #joystick-knob{
+    position:absolute;width:56px;height:56px;border-radius:50%;
+    background:rgba(224,169,58,0.65);left:37px;top:37px;pointer-events:none;
+  }
+  #jump-btn{
+    position:absolute;right:28px;bottom:34px;width:78px;height:78px;border-radius:50%;
+    background:rgba(20,22,26,0.45);border:1px solid var(--accent-dim);color:var(--accent);
+    font-size:12px;display:flex;align-items:center;justify-content:center;
+    pointer-events:auto;user-select:none;
+  }
+  #statusbar{
+    flex:0 0 auto;background:var(--panel);padding:7px 14px;font-family:'Courier New',monospace;
+    font-size:11px;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    border-top:1px solid rgba(255,255,255,0.06);
+  }
+
+  /* ---------------- Asset panel ---------------- */
+  #asset-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:flex-end;
+    justify-content:center;z-index:60;
+  }
+  #asset-overlay.visible{display:flex;}
+  #asset-panel{
+    width:100%;max-width:560px;max-height:82vh;background:var(--panel);border-radius:16px 16px 0 0;
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  #asset-panel h2{font-size:15px;margin:0;padding:16px;border-bottom:1px solid rgba(255,255,255,0.06);}
+  .section-label{font-size:12px;color:var(--accent);font-weight:700;padding:14px 16px 4px;}
+  .menu-tile{
+    display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:14px;cursor:pointer;
+  }
+  .menu-tile:hover{background:rgba(255,255,255,0.04);}
+  .menu-tile .ic{color:var(--text-dim);font-size:16px;width:20px;text-align:center;}
+  #asset-panel-body{overflow-y:auto;flex:1;}
+
+  /* generic sub-view (grid browse / url import) */
+  .subview{display:none;flex-direction:column;height:100%;}
+  .subview.visible{display:flex;}
+  .subview-header{
+    display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .back-btn{background:none;border:none;color:var(--text);font-size:18px;padding:0;}
+  .grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px;overflow-y:auto;
+  }
+  .grid-item{cursor:pointer;}
+  .grid-item img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:6px;background:#222;display:block;}
+  .grid-item .name{font-size:11px;color:var(--text-dim);margin-top:4px;text-align:center;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .empty-msg{padding:30px;text-align:center;color:var(--text-faint);font-size:13px;}
+  .import-form{padding:18px;display:flex;flex-direction:column;gap:14px;}
+  .import-form .btn-primary{margin-top:0;}
+  .hint{font-size:12px;color:var(--text-faint);line-height:1.6;}
+  #loading-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;
+    justify-content:center;z-index:80;font-family:'Courier New',monospace;color:var(--accent);
+  }
+  #loading-overlay.visible{display:flex;}
+</style>
+</head>
+<body>
+
+<!-- ============ Start menu (no login) ============ -->
+<div id="menu-screen">
+  <div class="menu-box">
+    <div class="logo">Godot Lite Engine</div>
+    <div class="tagline">محرك 3D خفيف — أرضيات حقيقية، نماذج GLB، فيزياء وتصادم تلقائي. يعمل كموقع ويب مباشرة.</div>
+    <label class="field-label">اسم المشروع</label>
+    <input id="project-name-input" type="text" placeholder="مثال: مدينتي الأولى" />
+    <button class="btn-primary" id="start-btn">ابدأ التطوير</button>
+    <div id="recent-wrap" style="display:none;">
+      <div class="recent-title">مشاريع سابقة</div>
+      <div id="recent-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Engine app ============ -->
+<div id="app">
+  <div id="topbar">
+    <button id="add-btn">+</button>
+    <div id="project-title"></div>
+  </div>
+  <div id="viewport-wrap">
+    <div id="viewport"></div>
+    <div id="hud">
+      <div id="joystick-zone"><div id="joystick-knob"></div></div>
+      <div id="jump-btn">قفز</div>
+    </div>
+  </div>
+  <div id="statusbar">جاري التحميل…</div>
+</div>
+
+<!-- ============ Asset panel ============ -->
+<div id="asset-overlay">
+  <div id="asset-panel">
+    <h2>إضافة عنصر</h2>
+    <div id="asset-panel-body">
+
+      <!-- root menu -->
+      <div class="subview visible" id="view-root">
+        <div class="section-label">أرضية</div>
+        <div class="menu-tile" data-go="view-ph-floor"><span class="ic">▦</span> أرضية من Poly Haven</div>
+        <div class="menu-tile" data-go="view-acg-floor"><span class="ic">▦</span> أرضية من AmbientCG</div>
+        <div class="section-label">نماذج (خيوانات / بيوت / عناصر)</div>
+        <div class="menu-tile" data-go="view-ph-model"><span class="ic">◆</span> نموذج من Poly Haven</div>
+        <div class="menu-tile" data-go="view-url-model"><span class="ic">⇗</span> استيراد من رابط مباشر (.glb/.gltf)</div>
+        <div class="menu-tile" data-go="view-file-model"><span class="ic">⇧</span> استيراد ملف GLB من جهازك (Mixamo / Sketchfab / Free3D)</div>
+      </div>
+
+      <!-- Poly Haven floor browse -->
+      <div class="subview" id="view-ph-floor">
+        <div class="subview-header"><button class="back-btn" data-back>→</button> أرضية من Poly Haven</div>
+        <div class="grid" id="grid-ph-floor"></div>
+      </div>
+
+      <!-- AmbientCG floor browse -->
+      <div class="subview" id="view-acg-floor">
+        <div class="subview-header"><button class="back-btn" data-back>→</button> أرضية من AmbientCG</div>
+        <div class="grid" id="grid-acg-floor"></div>
+      </div>
+
+      <!-- Poly Haven model browse -->
+      <div class="subview" id="view-ph-model">
+        <div class="subview-header"><button class="back-btn" data-back>→</button> نموذج من Poly Haven</div>
+        <div class="grid" id="grid-ph-model"></div>
+      </div>
+
+      <!-- URL import -->
+      <div class="subview" id="view-url-model">
+        <div class="subview-header"><button class="back-btn" data-back>→</button> استيراد من رابط</div>
+        <div class="import-form">
+          <input type="url" id="model-url-input" placeholder="رابط مباشر لملف .glb أو .gltf" />
+          <button class="btn-primary" id="model-url-add-btn">استيراد</button>
+          <div class="hint">يعمل مع أي رابط مباشر لملف GLB/GLTF — مثلاً نموذج رفعته بنفسك على أي استضافة.</div>
+        </div>
+      </div>
+
+      <!-- File import -->
+      <div class="subview" id="view-file-model">
+        <div class="subview-header"><button class="back-btn" data-back>→</button> استيراد ملف من الجهاز</div>
+        <div class="import-form">
+          <input type="file" id="model-file-input" accept=".glb" />
+          <div class="hint">صدّر النموذج كملف GLB من Mixamo أو Sketchfab أو Free3D (تصدير يدوي من موقعهم، فهي لا تملك واجهة تلقائية مجانية)، ثم اخترهُ هنا. سيُضاف تلقائياً مع تصادم فيزيائي.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="loading-overlay">جاري المعالجة…</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/",
+    "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "fflate": "https://esm.sh/fflate@0.8.2"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as CANNON from 'cannon-es';
+import { createClient } from '@supabase/supabase-js';
+import { unzipSync } from 'fflate';
+
+/* =====================================================================
+   0) Supabase (no-login project storage) — same project the user gave us.
+   Publishable key is meant to be public/client-safe; access is controlled
+   by the RLS policy on the "projects" table (see README).
+   ===================================================================== */
+const supabase = createClient(
+  'https://ficxjjiilvvklpkuojbd.supabase.co',
+  'sb_publishable_2A5gqdoKRzExTurAuo5OgA_PuPUbh1l'
+);
+
+async function saveProject(name) {
+  try { await supabase.from('projects').insert({ name }); } catch (_) {/* table may not exist yet — non-fatal */}
+}
+async function listProjects() {
+  try {
+    const { data, error } = await supabase.from('projects').select('name').order('created_at', { ascending:false }).limit(30);
+    if (error) return [];
+    return (data || []).map(r => r.name);
+  } catch (_) { return []; }
+}
+
+/* =====================================================================
+   1) Start menu wiring
+   ===================================================================== */
+const menuScreen = document.getElementById('menu-screen');
+const app = document.getElementById('app');
+const projectNameInput = document.getElementById('project-name-input');
+const startBtn = document.getElementById('start-btn');
+const recentWrap = document.getElementById('recent-wrap');
+const recentList = document.getElementById('recent-list');
+const projectTitleEl = document.getElementById('project-title');
+
+let engineStarted = false;
+
+function openProject(rawName) {
+  const name = (rawName || '').trim() || 'مشروع بدون اسم';
+  saveProject(name);
+  projectTitleEl.textContent = name;
+  menuScreen.classList.add('hidden');
+  app.classList.add('visible');
+  if (!engineStarted) { engineStarted = true; startEngine(); }
+}
+
+startBtn.addEventListener('click', () => openProject(projectNameInput.value));
+projectNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') openProject(projectNameInput.value); });
+
+listProjects().then(names => {
+  if (names.length === 0) return;
+  recentWrap.style.display = 'block';
+  for (const n of names) {
+    const item = document.createElement('div');
+    item.className = 'recent-item';
+    item.innerHTML = `<span class="dot"></span><span>${n}</span>`;
+    item.addEventListener('click', () => openProject(n));
+    recentList.appendChild(item);
+  }
+});
+
+/* =====================================================================
+   2) The actual 3D engine (Three.js + cannon-es) — identical core logic
+   to the app version, just without a Flutter bridge.
+   ===================================================================== */
+const statusEl = document.getElementById('statusbar');
+function setStatus(msg) { statusEl.textContent = msg; }
+function showLoading(show) { document.getElementById('loading-overlay').classList.toggle('visible', show); }
+
+let scene, camera, renderer, world, groundMesh, groundBody, playerMesh, playerBody;
+let playerYaw = 0, grounded = false;
+const camCurrentPos = new THREE.Vector3();
+const camTargetLook = new THREE.Vector3();
+const GROUND_SIZE = 800; // a deliberately large baseplate — room to actually build in
+const PLAYER_RADIUS = 0.35, PLAYER_HEIGHT = 1.7;
+const CAM_DISTANCE = 5.2, CAM_HEIGHT = 2.4;
+const keys = { w:false, a:false, s:false, d:false };
+let moveVec = { x:0, y:0 };
+const gltfLoader = new GLTFLoader();
+let spawnCursor = 0;
+
+function startEngine() {
+  const viewport = document.getElementById('viewport');
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x9fb4c7);
+  scene.fog = new THREE.Fog(0x9fb4c7, 60, 320);
+
+  camera = new THREE.PerspectiveCamera(65, viewport.clientWidth / viewport.clientHeight, 0.1, 2000);
+
+  renderer = new THREE.WebGLRenderer({ antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  viewport.appendChild(renderer.domElement);
+
+  window.addEventListener('resize', () => {
+    camera.aspect = viewport.clientWidth / viewport.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+  });
+
+  scene.add(new THREE.HemisphereLight(0xddeeff, 0x445544, 0.9));
+  const sun = new THREE.DirectionalLight(0xfff3df, 1.4);
+  sun.position.set(60, 90, 30);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -120; sun.shadow.camera.right = 120;
+  sun.shadow.camera.top = 120; sun.shadow.camera.bottom = -120;
+  sun.shadow.camera.far = 400;
+  scene.add(sun);
+
+  world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
+  world.defaultContactMaterial.friction = 0.4;
+  world.broadphase = new CANNON.SAPBroadphase(world);
+
+  const groundGeo = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE, 1, 1);
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0x6b7560, roughness: 1.0 });
+  groundMesh = new THREE.Mesh(groundGeo, groundMat);
+  groundMesh.rotation.x = -Math.PI / 2;
+  groundMesh.receiveShadow = true;
+  scene.add(groundMesh);
+
+  const grid = new THREE.GridHelper(GROUND_SIZE, GROUND_SIZE / 10, 0x000000, 0x000000);
+  grid.material.opacity = 0.06; grid.material.transparent = true; grid.position.y = 0.01;
+  scene.add(grid);
+
+  groundBody = new CANNON.Body({ mass:0, shape:new CANNON.Plane() });
+  groundBody.quaternion.setFromEuler(-Math.PI/2, 0, 0);
+  world.addBody(groundBody);
+
+  playerMesh = new THREE.Mesh(
+    new THREE.CapsuleGeometry(PLAYER_RADIUS, PLAYER_HEIGHT - PLAYER_RADIUS*2, 6, 12),
+    new THREE.MeshStandardMaterial({ color:0x3da9fc, roughness:0.6 })
+  );
+  playerMesh.castShadow = true;
+  playerMesh.position.set(0, PLAYER_HEIGHT/2 + 2, 0);
+  scene.add(playerMesh);
+
+  const playerShape = new CANNON.Cylinder(PLAYER_RADIUS, PLAYER_RADIUS, PLAYER_HEIGHT, 8);
+  playerBody = new CANNON.Body({ mass:70, shape:playerShape, fixedRotation:true });
+  playerBody.linearDamping = 0.92;
+  playerBody.position.set(0, PLAYER_HEIGHT/2 + 2, 0);
+  world.addBody(playerBody);
+
+  camCurrentPos.set(0, CAM_HEIGHT, CAM_DISTANCE);
+
+  setupInput();
+
+  const clock = new THREE.Clock();
+  function step() {
+    const dt = Math.min(clock.getDelta(), 0.05);
+
+    let forward = 0, strafe = 0;
+    if (keys.w) forward += 1;
+    if (keys.s) forward -= 1;
+    if (keys.d) strafe += 1;
+    if (keys.a) strafe -= 1;
+    if (Math.abs(moveVec.x) > 0.05 || Math.abs(moveVec.y) > 0.05) {
+      forward += -moveVec.y;
+      strafe += moveVec.x;
+    }
+    forward = Math.max(-1, Math.min(1, forward));
+    strafe = Math.max(-1, Math.min(1, strafe));
+
+    if (forward !== 0 || strafe !== 0) {
+      // Fixed target angle from input only (NOT relative to playerYaw) —
+      // otherwise the rotating reference frame feeds back into itself and
+      // the player can spin indefinitely on a sustained diagonal input.
+      const desiredYaw = Math.atan2(strafe, forward);
+      let diff = Math.atan2(Math.sin(desiredYaw - playerYaw), Math.cos(desiredYaw - playerYaw));
+      playerYaw += diff * Math.min(1, 3.0 * dt);
+      playerBody.velocity.x = Math.sin(playerYaw) * 4.2;
+      playerBody.velocity.z = Math.cos(playerYaw) * 4.2;
+    } else {
+      playerBody.velocity.x *= 0.8;
+      playerBody.velocity.z *= 0.8;
+    }
+
+    world.step(1/60, dt, 3);
+    grounded = playerBody.position.y <= (PLAYER_HEIGHT/2 + 0.08) || Math.abs(playerBody.velocity.y) < 0.05;
+
+    playerMesh.position.copy(playerBody.position);
+    playerMesh.rotation.y = playerYaw;
+
+    const desired = new THREE.Vector3(
+      playerMesh.position.x - Math.sin(playerYaw) * CAM_DISTANCE,
+      playerMesh.position.y + CAM_HEIGHT,
+      playerMesh.position.z - Math.cos(playerYaw) * CAM_DISTANCE
+    );
+    camCurrentPos.lerp(desired, 1 - Math.pow(0.0001, dt));
+    camera.position.copy(camCurrentPos);
+    camTargetLook.set(playerMesh.position.x, playerMesh.position.y + 1.0, playerMesh.position.z);
+    camera.lookAt(camTargetLook);
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+  setStatus('المحرك جاهز. استخدم زر + لإضافة أرضية أو نموذج.');
+}
+
+function setupInput() {
+  window.addEventListener('keydown', (e) => { const k = e.key.toLowerCase(); if (k in keys) keys[k] = true; if (k === ' ') tryJump(); });
+  window.addEventListener('keyup', (e) => { const k = e.key.toLowerCase(); if (k in keys) keys[k] = false; });
+
+  const zone = document.getElementById('joystick-zone');
+  const knob = document.getElementById('joystick-knob');
+  let joyActive = false, joyId = null, joyCenter = { x:0, y:0 };
+
+  function joyStart(id, x, y) {
+    joyActive = true; joyId = id;
+    const r = zone.getBoundingClientRect();
+    joyCenter = { x: r.left + r.width/2, y: r.top + r.height/2 };
+    joyMove(x, y);
+  }
+  function joyMove(x, y) {
+    const maxR = 50;
+    let dx = x - joyCenter.x, dy = y - joyCenter.y;
+    const dist = Math.min(Math.hypot(dx, dy), maxR);
+    const ang = Math.atan2(dy, dx);
+    dx = Math.cos(ang) * dist; dy = Math.sin(ang) * dist;
+    knob.style.left = (37 + dx) + 'px';
+    knob.style.top = (37 + dy) + 'px';
+    moveVec.x = dx / maxR; moveVec.y = dy / maxR;
+  }
+  function joyEnd() {
+    joyActive = false; joyId = null; moveVec = { x:0, y:0 };
+    knob.style.left = '37px'; knob.style.top = '37px';
+  }
+  zone.addEventListener('touchstart', (e) => { const t = e.changedTouches[0]; joyStart(t.identifier, t.clientX, t.clientY); e.preventDefault(); }, { passive:false });
+  zone.addEventListener('touchmove', (e) => { for (const t of e.changedTouches) if (t.identifier === joyId) joyMove(t.clientX, t.clientY); e.preventDefault(); }, { passive:false });
+  zone.addEventListener('touchend', (e) => { for (const t of e.changedTouches) if (t.identifier === joyId) joyEnd(); }, { passive:false });
+  zone.addEventListener('mousedown', (e) => joyStart('mouse', e.clientX, e.clientY));
+  window.addEventListener('mousemove', (e) => { if (joyActive && joyId === 'mouse') joyMove(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', () => { if (joyId === 'mouse') joyEnd(); });
+
+  const jumpBtn = document.getElementById('jump-btn');
+  jumpBtn.addEventListener('touchstart', (e) => { tryJump(); e.preventDefault(); }, { passive:false });
+  jumpBtn.addEventListener('mousedown', tryJump);
+}
+function tryJump() { if (grounded) { playerBody.velocity.y = 5.2; grounded = false; } }
+
+/* ---- Engine API: ground texture + model import (shared by all asset sources) ---- */
+function setGroundTexture(url, realTileSizeMeters) {
+  const tileSize = (realTileSizeMeters && realTileSizeMeters > 0.05) ? realTileSizeMeters : 2.0;
+  const loader = new THREE.TextureLoader();
+  loader.setCrossOrigin('anonymous');
+  loader.load(url, (tex) => {
+    tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+    const repeats = GROUND_SIZE / tileSize;
+    tex.repeat.set(repeats, repeats);
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    tex.colorSpace = THREE.SRGBColorSpace;
+    groundMesh.material.map = tex; groundMesh.material.color.set(0xffffff);
+    groundMesh.material.needsUpdate = true;
+    setStatus('تم تطبيق الأرضية بشكل حقيقي (تكرار غير مشوّه).');
+  }, undefined, () => setStatus('فشل تحميل تكستشر الأرضية.'));
+}
+
+function nextSpawnPosition() {
+  spawnCursor += 1;
+  const angle = spawnCursor * 0.9;
+  const radius = 4 + spawnCursor * 1.6;
+  return new THREE.Vector3(playerMesh.position.x + Math.cos(angle)*radius, 0.05, playerMesh.position.z + Math.sin(angle)*radius);
+}
+function attachAutoCollider(object3d) {
+  const box = new THREE.Box3().setFromObject(object3d);
+  const size = new THREE.Vector3(); box.getSize(size);
+  const center = new THREE.Vector3(); box.getCenter(center);
+  size.x = Math.max(size.x, 0.05); size.y = Math.max(size.y, 0.05); size.z = Math.max(size.z, 0.05);
+  const body = new CANNON.Body({ mass:0, shape:new CANNON.Box(new CANNON.Vec3(size.x/2, size.y/2, size.z/2)) });
+  body.position.set(center.x, center.y, center.z);
+  world.addBody(body);
+}
+function finalizeImportedObject(object3d, label) {
+  const spawn = nextSpawnPosition();
+  const box = new THREE.Box3().setFromObject(object3d);
+  const size = new THREE.Vector3(); box.getSize(size);
+  object3d.position.set(spawn.x, spawn.y + size.y/2, spawn.z);
+  object3d.traverse((c) => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+  scene.add(object3d);
+  attachAutoCollider(object3d);
+  setStatus(`تمت إضافة "${label}" مع تصادم تلقائي.`);
+}
+function addModelFromUrl(url, label) {
+  setStatus(`جاري تحميل ${label || 'النموذج'}…`);
+  gltfLoader.load(url, (gltf) => finalizeImportedObject(gltf.scene, label || 'نموذج'),
+    undefined, () => setStatus('فشل تحميل النموذج. تحقق أن الرابط مباشر لملف glb/gltf صالح.'));
+}
+function addModelFromArrayBuffer(buffer, label) {
+  setStatus(`جاري معالجة ${label || 'الملف'}…`);
+  gltfLoader.parse(buffer, '', (gltf) => finalizeImportedObject(gltf.scene, label || 'نموذج مستورد'),
+    () => setStatus('تعذر قراءة الملف. تأكد أنه GLB صالح.'));
+}
+
+/* =====================================================================
+   3) Asset panel (Poly Haven / AmbientCG / URL / device file)
+   ===================================================================== */
+const overlay = document.getElementById('asset-overlay');
+const addBtn = document.getElementById('add-btn');
+addBtn.addEventListener('click', () => { overlay.classList.add('visible'); showView('view-root'); });
+overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('visible'); });
+
+function showView(id) {
+  document.querySelectorAll('.subview').forEach(v => v.classList.remove('visible'));
+  document.getElementById(id).classList.add('visible');
+}
+document.querySelectorAll('[data-go]').forEach(el => el.addEventListener('click', () => {
+  showView(el.dataset.go);
+  if (el.dataset.go === 'view-ph-floor') loadPolyHavenFloors();
+  if (el.dataset.go === 'view-acg-floor') loadAmbientCGFloors();
+  if (el.dataset.go === 'view-ph-model') loadPolyHavenModels();
+}));
+document.querySelectorAll('[data-back]').forEach(el => el.addEventListener('click', () => showView('view-root')));
+
+// NOTE: Poly Haven's API docs ask for a unique User-Agent header, but
+// browsers treat "User-Agent" as a forbidden header and silently refuse to
+// let JS set it on fetch() — this is a browser security restriction, not a
+// bug here. Poly Haven currently still serves requests without it; if they
+// start blocking UA-less requests later, these calls would need to move
+// behind a tiny server-side proxy that can set the header.
+
+async function loadPolyHavenFloors() {
+  const grid = document.getElementById('grid-ph-floor');
+  grid.innerHTML = '<div class="empty-msg">جاري التحميل…</div>';
+  try {
+    const res = await fetch('https://api.polyhaven.com/assets?type=textures&categories=outdoor');
+    const json = await res.json();
+    const items = Object.entries(json).map(([id, v]) => ({ id, ...v }))
+      .sort((a,b) => (b.download_count||0) - (a.download_count||0)).slice(0, 15);
+    renderGrid(grid, items, (item) => item.name, (item) => item.thumbnail_url, async (item) => {
+      showLoading(true);
+      const result = await getPolyHavenTextureImage(item.id);
+      showLoading(false);
+      overlay.classList.remove('visible');
+      if (!result) { setStatus('تعذر جلب صور هذا العنصر.'); return; }
+      setGroundTexture(result.url, result.tileSizeMeters);
+    });
+  } catch (e) { grid.innerHTML = '<div class="empty-msg">فشل الاتصال بـ Poly Haven.</div>'; }
+}
+
+async function getPolyHavenTextureImage(assetId) {
+  try {
+    const filesRes = await fetch(`https://api.polyhaven.com/files/${assetId}`);
+    const files = await filesRes.json();
+    const nonImage = new Set(['blend','gltf','mtlx']);
+    const mapKeys = Object.keys(files).filter(k => !nonImage.has(k));
+    if (mapKeys.length === 0) return null;
+    const chosenKey = mapKeys.find(k => /diff|col/i.test(k)) || mapKeys[0];
+    const resolutions = files[chosenKey];
+    const resKey = resolutions['1k'] ? '1k' : Object.keys(resolutions)[0];
+    const formats = resolutions[resKey];
+    const formatKey = formats.jpg ? 'jpg' : (formats.png ? 'png' : Object.keys(formats)[0]);
+    const url = formats[formatKey]?.url;
+    if (!url) return null;
+
+    let tileSizeMeters = 2.0;
+    try {
+      const infoRes = await fetch(`https://api.polyhaven.com/info/${assetId}`);
+      const info = await infoRes.json();
+      if (Array.isArray(info.dimensions) && info.dimensions.length) tileSizeMeters = info.dimensions[0] / 1000;
+    } catch(_){}
+    return { url, tileSizeMeters };
+  } catch (_) { return null; }
+}
+
+async function loadPolyHavenModels() {
+  const grid = document.getElementById('grid-ph-model');
+  grid.innerHTML = '<div class="empty-msg">جاري التحميل…</div>';
+  try {
+    const res = await fetch('https://api.polyhaven.com/assets?type=models');
+    const json = await res.json();
+    const items = Object.entries(json).map(([id, v]) => ({ id, ...v }))
+      .sort((a,b) => (b.download_count||0) - (a.download_count||0)).slice(0, 15);
+    renderGrid(grid, items, (item) => item.name, (item) => item.thumbnail_url, async (item) => {
+      showLoading(true);
+      const url = await getPolyHavenModelUrl(item.id);
+      showLoading(false);
+      overlay.classList.remove('visible');
+      if (!url) { setStatus('تعذر جلب ملف هذا النموذج.'); return; }
+      addModelFromUrl(url, item.name);
+    });
+  } catch (e) { grid.innerHTML = '<div class="empty-msg">فشل الاتصال بـ Poly Haven.</div>'; }
+}
+async function getPolyHavenModelUrl(assetId) {
+  try {
+    const res = await fetch(`https://api.polyhaven.com/files/${assetId}`);
+    const files = await res.json();
+    if (!files.gltf) return null;
+    const resKey = files.gltf['1k'] ? '1k' : Object.keys(files.gltf)[0];
+    return files.gltf[resKey]?.gltf?.url || null;
+  } catch (_) { return null; }
+}
+
+/* ambientCG: downloads the real ZIP, extracts the color map client-side
+   with fflate (a JS unzip lib), and uses it as a normal image. Their JSON
+   shape has shifted over time, so this walks the response generically
+   (by file extension) instead of assuming one fixed structure. */
+async function loadAmbientCGFloors() {
+  const grid = document.getElementById('grid-acg-floor');
+  grid.innerHTML = '<div class="empty-msg">جاري التحميل…</div>';
+  try {
+    const res = await fetch('https://ambientcg.com/api/v2/full_json?type=Material&include=imageData&limit=15&sort=Popular');
+    const json = await res.json();
+    const items = findAssetList(json).map(a => ({
+      assetId: a.assetId || a.id || '', displayName: a.displayName || a.name || a.assetId || 'مادة',
+      thumb: findFirstImageUrl(a),
+    })).filter(m => m.assetId);
+    renderGrid(grid, items, (item) => item.displayName, (item) => item.thumb, async (item) => {
+      showLoading(true);
+      const dataUri = await getAmbientCGColorMap(item.assetId);
+      showLoading(false);
+      overlay.classList.remove('visible');
+      if (!dataUri) { setStatus('تعذر استخراج صورة المادة (قد تكون قيود CORS).'); return; }
+      setGroundTexture(dataUri, 2.0);
+    });
+  } catch (e) { grid.innerHTML = '<div class="empty-msg">فشل الاتصال بـ AmbientCG.</div>'; }
+}
+async function getAmbientCGColorMap(assetId) {
+  try {
+    const res = await fetch(`https://ambientcg.com/api/v2/full_json?id=${assetId}&include=downloadData`);
+    const json = await res.json();
+    const zipUrl = findFirstZipUrl(json);
+    if (!zipUrl) return null;
+    const zipRes = await fetch(zipUrl);
+    const buf = new Uint8Array(await zipRes.arrayBuffer());
+    const files = unzipSync(buf);
+    let chosenName = Object.keys(files).find(n => {
+      const l = n.toLowerCase();
+      return (l.endsWith('.jpg')||l.endsWith('.jpeg')||l.endsWith('.png')) &&
+        (l.includes('color')||l.includes('albedo')||l.includes('basecolor')||l.includes('diffuse'));
+    });
+    if (!chosenName) chosenName = Object.keys(files).find(n => /\.(jpg|jpeg|png)$/i.test(n));
+    if (!chosenName) return null;
+    const bytes = files[chosenName];
+    const mime = chosenName.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+    let binary = ''; for (let i=0;i<bytes.length;i++) binary += String.fromCharCode(bytes[i]);
+    return `data:${mime};base64,${btoa(binary)}`;
+  } catch (_) { return null; }
+}
+function findAssetList(node) {
+  if (Array.isArray(node)) {
+    const maps = node.filter(m => m && (m.assetId || m.displayName));
+    if (maps.length) return maps;
+    for (const v of node) { const f = findAssetList(v); if (f.length) return f; }
+  } else if (node && typeof node === 'object') {
+    for (const k of ['foundAssets','foundAsset','assets','Assets']) if (Array.isArray(node[k])) return node[k];
+    for (const v of Object.values(node)) { const f = findAssetList(v); if (f.length) return f; }
+  }
+  return [];
+}
+function findFirstImageUrl(node) {
+  if (typeof node === 'string') return /^http.*\.(png|jpe?g)$/i.test(node) ? node : null;
+  if (Array.isArray(node)) { for (const v of node) { const f = findFirstImageUrl(v); if (f) return f; } }
+  else if (node && typeof node === 'object') { for (const v of Object.values(node)) { const f = findFirstImageUrl(v); if (f) return f; } }
+  return null;
+}
+function findFirstZipUrl(node) {
+  if (typeof node === 'string') return /^http.*\.zip/i.test(node) ? node : null;
+  if (Array.isArray(node)) { for (const v of node) { const f = findFirstZipUrl(v); if (f) return f; } }
+  else if (node && typeof node === 'object') { for (const v of Object.values(node)) { const f = findFirstZipUrl(v); if (f) return f; } }
+  return null;
+}
+
+function renderGrid(container, items, nameFn, thumbFn, onPick) {
+  container.innerHTML = '';
+  if (items.length === 0) { container.innerHTML = '<div class="empty-msg">لا توجد نتائج</div>'; return; }
+  for (const item of items) {
+    const el = document.createElement('div');
+    el.className = 'grid-item';
+    const thumb = thumbFn(item) || '';
+    el.innerHTML = `<img src="${thumb}" loading="lazy" onerror="this.style.opacity=0.15" /><div class="name">${nameFn(item) || ''}</div>`;
+    el.addEventListener('click', () => onPick(item));
+    container.appendChild(el);
+  }
+}
+
+/* URL + device-file model import */
+document.getElementById('model-url-add-btn').addEventListener('click', () => {
+  const url = document.getElementById('model-url-input').value.trim();
+  if (!url) return;
+  overlay.classList.remove('visible');
+  addModelFromUrl(url, url.split('/').pop());
+});
+document.getElementById('model-file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  overlay.classList.remove('visible');
+  const reader = new FileReader();
+  reader.onload = () => addModelFromArrayBuffer(reader.result, file.name);
+  reader.onerror = () => setStatus('تعذر قراءة الملف.');
+  reader.readAsArrayBuffer(file);
+});
+</script>
+</body>
+</html>
+
